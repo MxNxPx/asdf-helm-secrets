@@ -66,7 +66,7 @@ downloaders:
       - "secrets+age-import-kubernetes"
 END
   ln -s . "${install_path}/helm-secrets"
-  ln -s ./bin/scripts/run.sh "${bin_install_path}/helm-secrets"
+  ln -s scripts/run.sh "${bin_install_path}/helm-secrets"
 
   popd > /dev/null
 
