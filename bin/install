@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+[ -z "${ASDF_INSTALL_TYPE+x}" ] && echo "ASDF_INSTALL_TYPE is required" && exit 1
+[ -z "${ASDF_INSTALL_VERSION+x}" ] && echo "ASDF_INSTALL_VERSION is required" && exit 1
+[ -z "${ASDF_INSTALL_PATH+x}" ] && echo "ASDF_INSTALL_PATH is required" && exit 1
+
+install() {
+  local install_type=$1
+  [ "$install_type" != "version" ] && echo "intall type, $install_type, is not supported" && exit 1
+
+  local version=$2
+  local install_path=$3
+
+  local platform
+  platform=$(uname | tr '[:upper:]' '[:lower:]')
+  case "$platform" in
+    darwin) platform="macos";;
+  esac
+
+  local arch
+  arch=$(uname -m)
+  case "$arch" in
+    x86_64) arch="amd64";;
+    aarch64) arch="arm64";;
+  esac
+
+  local download_url
+  download_url="https://github.com/jkroepke/helm-secrets/releases/download/v${version}/helm-secrets.tar.gz"
+
+  mkdir -p "${install_path}"
+
+  echo "Downloading helm-secrets from ${download_url}"
+
+  pushd "${install_path}" > /dev/null
+
+  mkdir -p "${install_path}/helm-secrets-files"
+  curl -sL "$download_url" | tar zx --strip-components=1 -C "${install_path}/helm-secrets-files"
+
+  chmod -R +x "${install_path}"
+
+  cat > "${install_path}/plugin.yaml" << END
+name: "secrets"
+version: "asdf"
+usage: "Secrets encryption in Helm for Git storing"
+description: "This plugin provides secrets values encryption for Helm charts secure storing"
+useTunnel: true
+command: "\$HELM_PLUGIN_DIR/helm-secrets-files/scripts/run.sh"
+platformCommand:
+  - os: windows
+    command: "cmd /c \$HELM_PLUGIN_DIR\\\scripts\\\wrapper\\\sh.cmd \$HELM_PLUGIN_DIR\\\scripts\\\run.sh"
+
+downloaders:
+  - command: "scripts/run.sh downloader"
+    protocols:
+      - "sops"
+      - "secret"
+      - "secrets"
+      - "secrets+gpg-import"
+      - "secrets+gpg-import-kubernetes"
+      - "secrets+age-import"
+      - "secrets+age-import-kubernetes"
+END
+  ln -s . "${install_path}/helm-secrets"
+
+  popd > /dev/null
+
+  if command -v helm >/dev/null && ! helm plugin list | sed 1d | grep -qs '^secrets[[:space:]]'; then
+    helm plugin install "${install_path}" || true
+  fi
+}
+
+install "$ASDF_INSTALL_TYPE" "$ASDF_INSTALL_VERSION" "$ASDF_INSTALL_PATH"
