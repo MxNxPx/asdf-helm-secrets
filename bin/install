@@ -67,7 +67,7 @@ END
   popd > /dev/null
 
   if command -v helm >/dev/null && ! helm plugin list | sed 1d | grep -qs '^secrets[[:space:]]'; then
-    helm plugin install "${install_path}" || true
+    helm plugin install "${install_path}/helm-secrets" || true
   fi
 }
 
