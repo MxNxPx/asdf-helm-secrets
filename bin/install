@@ -39,7 +39,7 @@ install() {
   pushd "${bin_install_path}" > /dev/null
   #pushd "${install_path}" > /dev/null
 
-  curl -sL "$download_url" | tar zx --strip-components=1 -C "${bin_install_path}"
+  curl -sL "$download_url" | tar zx --strip-components=2 -C "${bin_install_path}" helm-secrets/scripts
 
   chmod -R +x "${bin_install_path}"
 
@@ -49,13 +49,10 @@ version: "asdf"
 usage: "Secrets encryption in Helm for Git storing"
 description: "This plugin provides secrets values encryption for Helm charts secure storing"
 useTunnel: true
-command: "\$HELM_PLUGIN_DIR/bin/scripts/run.sh"
-platformCommand:
-  - os: windows
-    command: "cmd /c \$HELM_PLUGIN_DIR\\\scripts\\\wrapper\\\sh.cmd \$HELM_PLUGIN_DIR\\\scripts\\\run.sh"
+command: "helm-secrets"
 
 downloaders:
-  - command: "scripts/run.sh downloader"
+  - command: "helm-secrets downloader"
     protocols:
       - "sops"
       - "secret"
@@ -66,7 +63,7 @@ downloaders:
       - "secrets+age-import-kubernetes"
 END
   ln -s . "${install_path}/helm-secrets"
-  ln -s scripts/run.sh "${bin_install_path}/helm-secrets"
+  ln -s run.sh "${bin_install_path}/helm-secrets"
 
   popd > /dev/null
 
